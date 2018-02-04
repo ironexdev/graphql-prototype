@@ -1,0 +1,9 @@
+{% block body %}
+    <table>
+        {% for game in games %}
+            <tr>
+                <td>{{ game.title }}</td><td>{{ game.genre.title }}</td>
+             </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

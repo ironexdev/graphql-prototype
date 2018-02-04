@@ -1,0 +1,38 @@
+<?php
+
+namespace App\GraphQL;
+
+class Queries
+{
+    public static function getGames($fields)
+    {
+        $query = 'query '.__FUNCTION__
+               .'{'
+               .'games'
+               .'{';
+
+        $query .= self::iterate($fields);
+
+        $query .= '}}';
+
+        return $query;
+    }
+
+    private static function iterate($array)
+    {
+        $result = '';
+
+        foreach ($array as $key => $value) {
+            if ('array' === gettype($value)) {
+                $result .= $key.'{';
+                $result .= self::iterate($value);
+                $result .= '}';
+            } else {
+                $result .= $value.',';
+            }
+        }
+
+        return $result;
+    }
+}
+

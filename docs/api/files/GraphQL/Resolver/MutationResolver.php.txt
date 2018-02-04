@@ -1,0 +1,102 @@
+<?php
+
+namespace App\GraphQL\Resolver;
+
+use App\CustomError;
+use App\CustomException;
+use App\Entity\Game;
+use App\Entity\Genre;
+
+class MutationResolver extends Resolver
+{
+    public function resolveDeleteGame(?\stdClass $source, array $args, ?\stdClass $context): ?\stdClass
+    {
+        $em = $context->em;
+        $id = $args['id'];
+
+        $gameRepository = $em->getRepository(Game::class);
+
+        $game = $gameRepository->find($id);
+
+        if (null === $game) {
+            throw new CustomException('Errors are listed.', 0, null, ['game' => CustomError::NOT_EXISTS]);
+        }
+
+        $deletedId = $gameRepository->delete($game);
+
+        return null !== $deletedId ? (object) ['id' => $deletedId] : null;
+    }
+
+    public function resolveInsertGame(?\stdClass $source, array $args, ?\stdClass $context): ?\stdClass
+    {
+        $em = $context->em;
+        $title = $args['title'];
+        $genreId = $args['genreId'];
+
+        $genreRepository = $em->getRepository(Genre::class);
+        $genre = $genreRepository->find($genreId);
+
+        if (null === $genre) {
+            throw new CustomException('Errors are listed.', 0, null, ['genre' => CustomError::NOT_EXISTS]);
+        }
+
+        $game = new Game();
+        $game->setTitle($title);
+        $game->setGenre($genre);
+
+        $violations = $context->validator->validate($game);
+
+        if (count($violations) > 0) {
+            $violationsFormatted = $this->formatConstraintViolations($violations);
+
+            throw new CustomException('Errors are listed.', 0, null, $violationsFormatted);
+        }
+
+        $gameRepository = $em->getRepository(Game::class);
+        $insertedId = $gameRepository->insert($game);
+
+        return null !== $insertedId ? (object) ['id' => $insertedId] : null;
+    }
+
+    public function resolveUpdateGame(?\stdClass $source, array $args, ?\stdClass $context): ?\stdClass
+    {
+        $em = $context->em;
+        $id = $args['id'];
+        $title = true === isset($args['title']) ? $args['title'] : null;
+        $genreId = true === isset($args['genreId']) ? $args['genreId'] : null;
+
+        if (null === $title && null === $genreId) { // at least one parameter has to be present or there's nothing to do
+            throw new CustomException('Errors are listed.', 0, null, ['game' => CustomError::INVALID_PARAMETERS]);
+        }
+
+        $gameRepository = $em->getRepository(Game::class);
+        $game = $gameRepository->find($id);
+
+        if (null === $game) {
+            throw new CustomException('Errors are listed.', 0, null, ['game' => CustomError::NOT_EXISTS]);
+        }
+
+        if (null !== $title) {
+            $game->setTitle($title);
+        }
+
+        if (null !== $genreId) {
+            $genreRepository = $em->getRepository(Genre::class);
+            $genre = $genreRepository->find($genreId);
+            $game->setGenre($genre);
+        }
+
+        $violations = $context->validator->validate($game);
+
+        if (count($violations) > 0) {
+            $violationsFormatted = $this->formatConstraintViolations($violations);
+
+            throw new CustomException('Errors are listed.', 0, null, $violationsFormatted);
+        }
+
+        $updatedId = $gameRepository->update($game);
+
+        return null !== $updatedId ? (object) ['id' => $updatedId] : null;
+    }
+}
+

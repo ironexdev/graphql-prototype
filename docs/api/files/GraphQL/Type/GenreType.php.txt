@@ -1,0 +1,40 @@
+<?php
+
+namespace App\GraphQL\Type;
+
+use App\GraphQL\Resolver\GenreResolver;
+use App\GraphQL\Types;
+use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\ResolveInfo;
+
+class GenreType extends ObjectType
+{
+    private $resolver;
+
+    public function __construct()
+    {
+        $this->resolver = new GenreResolver();
+
+        $config =
+        [
+            'name' => 'Genre',
+            'fields' => function () {
+                return [
+                    'id' => Types::id(),
+                    'title' => Types::string(),
+                ];
+            },
+            'resolveField' => function ($value, $args, $context, ResolveInfo $info) {
+                $method = 'resolve'.ucfirst($info->fieldName);
+
+                if (method_exists($this->resolver, $method)) {
+                    return $this->resolver->{$method}($source, $args, $context, $info);
+                } else {
+                    return $value->{$info->fieldName};
+                }
+            },
+        ];
+        parent::__construct($config);
+    }
+}
+

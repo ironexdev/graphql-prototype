@@ -1,0 +1,36 @@
+<?php
+
+namespace App\GraphQL\Buffer;
+
+use App\Entity\Genre;
+use Doctrine\ORM\EntityManager;
+
+class GenreBuffer implements BufferInterface
+{
+    private static $ids = [];
+    private static $items = [];
+
+    public static function storeId(int $id): void
+    {
+        self::$ids[] = $id;
+    }
+
+    public static function getItem(int $id): \stdClass
+    {
+        return self::$items[$id];
+    }
+
+    public static function fetchData(EntityManager $em): void
+    {
+        if (self::$items === []) {
+            $result = $em->getRepository(Genre::class)->selectMultiple(self::$ids);
+
+            $items = [];
+            foreach ($result as $row) {
+                $items[$row['id']] = (object) $row;
+            }
+
+            self::$items = $items;
+        }
+    }
+}

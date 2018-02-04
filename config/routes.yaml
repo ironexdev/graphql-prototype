@@ -1,0 +1,6 @@
+index:
+    path: /
+    controller: App\Controller\IndexController::index
+graphql_index:
+    path: /graphql
+    controller: App\Controller\GraphQL\IndexController::index
